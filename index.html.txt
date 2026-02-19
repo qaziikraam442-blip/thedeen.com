@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheDeen.com | Universal Knowledge Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .category-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .category-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+        }
+        
+        .upload-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .upload-zone:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .nav-link {
+            position: relative;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        .monetization-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+        
+        .floating-element {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+        
+        .revenue-stream {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .revenue-stream::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .revenue-stream:hover::before {
+            left: 100%;
+        }
+        
+        .custom-cursor {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #667eea;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Custom Cursor -->
+    <div class="custom-cursor hidden md:block" id="cursor"></div>
+
+    <!-- 3D Background Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass-panel border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center font-bold text-xl">D</div>
+                    <span class="text-2xl font-bold tracking-tighter">TheDeen</span>
+                </div>
+                
+                <div class="hidden md:flex space-x-8">
+                    <a href="#discover" class="nav-link text-sm font-medium hover:text-blue-400 transition">Discover</a>
+                    <a href="#upload" class="nav-link text-sm font-medium hover:text-blue-400 transition">Upload</a>
+                    <a href="#monetize" class="nav-link text-sm font-medium hover:text-blue-400 transition">Monetize</a>
+                    <a href="#analytics" class="nav-link text-sm font-medium hover:text-blue-400 transition">Analytics</a>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button class="hidden md:block text-sm font-medium hover:text-blue-400 transition">Sign In</button>
+                    <button class="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-2 rounded-full font-medium hover:shadow-lg hover:shadow-blue-500/30 transition transform hover:scale-105">
+                        Get Started
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-black/50 to-black pointer-events-none"></div>
+        
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="inline-block mb-4 px-4 py-1 rounded-full glass-panel text-sm font-medium text-blue-300 border border-blue-500/30">
+                ?? The Universal Knowledge Platform
+            </div>
+            
+            <h1 class="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight">
+                Upload Your <br>
+                <span class="gradient-text">Universe</span>
+            </h1>
+            
+            <p class="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto mb-10 font-light">
+                From quantum physics to culinary arts. TheDeen.com is the only platform where every field of human knowledge converges, monetizes, and inspires.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <button onclick="scrollToUpload()" class="group relative px-8 py-4 bg-white text-black rounded-full font-bold text-lg overflow-hidden transition transform hover:scale-105">
+                    <span class="relative z-10">Start Uploading</span>
+                    <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </button>
+                <button class="px-8 py-4 glass-panel rounded-full font-medium hover:bg-white/10 transition flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Watch Demo
+                </button>
+            </div>
+            
+            <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-400">50+</div>
+                    <div class="text-sm text-gray-500">Categories</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-purple-400">$2M+</div>
+                    <div class="text-sm text-gray-500">Creator Earnings</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-pink-400">10M+</div>
+                    <div class="text-sm text-gray-500">Monthly Views</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-indigo-400">0%</div>
+                    <div class="text-sm text-gray-500">Platform Fees</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="scroll-indicator">
+            <svg class="w-6 h-6 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section id="discover" class="py-24 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4">Every Field, One Platform</h2>
+                <p class="text-gray-400 text-lg">Upload content across unlimited categories with AI-powered organization</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Health & Wellness -->
+                <div class="category-card glass-panel rounded-2xl p-6 cursor-pointer group">
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center mb-4 text-2xl group-hover:scale-110 transition">??</div>
+                    <h3 class="text-xl font-bold mb-2">Health & Wellness</h3>
+                    <p class="text-gray-400 text-sm mb-4">Medical research, fitness routines, mental health guides, and nutritional science.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-green-400">2.4M uploads</span>
+                        <span class="text-gray-500">Trending ?</span>
+                    </div>
+                </div>
+
+                <!-- Space & Astronomy -->
+                <div class="category-card glass-panel rounded-2xl p-6 cursor-pointer group">
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center mb-4 text-2xl group-hover:scale-110 transition">??</div>
+                    <h3 class="text-xl font-bold mb-2">Space & Astronomy</h3>
+                    <p class="text-gray-400 text-sm mb-4">NASA archives, astrophotography, theoretical physics, and space exploration.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-purple-400">890K uploads</span>
+                        <span class="text-gray-500">Hot ??</span>
+                    </div>
+                </div>
+
+                <!-- Sports & Athletics -->
+                <div class="category-card glass-panel rounded-2xl p-6 cursor-pointer group">
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-400 to-red-600 flex items-center justify-center mb-4 text-2xl group-hover:scale-110 transition">?</div>
+                    <h3 class="text-xl font-bold mb-2">Sports & Athletics</h3>
+                    <p class="text-gray-400 text-sm mb-4">Training programs, game analysis, extreme sports, and e-sports content.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-orange-400">3.1M uploads</span>
+                        <span class="text-gray-500">Popular</span>
+                    </div>
+                </div>
+
+                <!-- Technology -->
+                <div class="category-card glass-panel rounded-2xl p-6 cursor-pointer group">
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-600 flex items-center justify-center mb-4 text-2xl group-hover:scale-110 transition">??</div>
+                    <h3 class="text-xl font-bold mb-2">Technology</h3>
+                    <p class="text-gray-400 text-sm mb-4">Coding tutorials, AI research, gadget reviews, and cybersecurity.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-blue-400">5.7M uploads</span>
+                        <span class="text-gray-500">Top Category</span>
+                    </div>
+                </div>
+
+                <!-- Arts & Culture -->
+                <div class="category-card glass-panel rounded-2xl p-6 cursor-pointer group">
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-400 to-rose-600 flex items-center justify-center mb-4 text-2xl group-hover:scale-110 transition">??</div>
+                    <h3 class="text-xl font-bold mb-2">Arts & Culture</h3>
+                    <p class="text-gray-400 text-sm mb-4">Digital art, music production, historical archives, and cultural documentaries.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-pink-400">1.8M uploads</span>
+                        <span class="text-gray-500">Growing</span>
+                    </div>
+                </div>
+
+                <!-- Finance -->
+                <div class="category-card glass-panel rounded-2xl p-6 cursor-pointer group">
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center mb-4 text-2xl group-hover:scale-110 transition">??</div>
+                    <h3 class="text-xl font-bold mb-2">Finance & Business</h3>
+                    <p class="text-gray-400 text-sm mb-4">Crypto analysis, stock strategies, entrepreneurship, and market insights.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-yellow-400">2.2M uploads</span>
+                        <span class="text-gray-500">Active</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-12 text-center">
+                <button class="glass-panel px-8 py-3 rounded-full font-medium hover:bg-white/10 transition border border-white/20">
+                    View All 50+ Categories ?
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upload Section -->
+    <section id="upload" class="py-24 relative bg-black/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6">Universal Upload System</h2>
+                    <p class="text-gray-400 text-lg mb-8">
+                        Drag, drop, and deploy. Our AI automatically categorizes, tags, and optimizes your content for maximum reach across all fields of knowledge.
+                    </p>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4">
+                            <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                                <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Multi-Format Support</h4>
+                                <p class="text-sm text-gray-400">Video 8K, RAW images, 3D models, PDFs, datasets, and interactive code.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start gap-4">
+                            <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">AI Auto-Categorization</h4>
+                                <p class="text-sm text-gray-400">Machine learning instantly sorts your content into relevant fields and subtopics.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start gap-4">
+                            <div class="w-8 h-8 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                                <svg class="w-4 h-4 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Cross-Disciplinary Tags</h4>
+                                <p class="text-sm text-gray-400">Content appears in multiple categories (e.g., "Space Medicine" appears in both Health and Space).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-panel rounded-3xl p-8 border border-white/10 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl -mr-32 -mt-32"></div>
+                    
+                    <div class="upload-zone rounded-2xl p-12 text-center cursor-pointer relative z-10" id="dropZone">
+                        <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                            <svg class="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Drop files anywhere</h3>
+                        <p class="text-gray-400 text-sm mb-4">or click to browse (up to 10GB per file)</p>
+                        <div class="flex justify-center gap-2 text-xs text-gray-500">
+                            <span class="px-2 py-1 bg-white/5 rounded">MP4</span>
+                            <span class="px-2 py-1 bg-white/5 rounded">PDF</span
